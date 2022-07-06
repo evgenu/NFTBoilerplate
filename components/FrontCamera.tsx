@@ -1,4 +1,4 @@
-import { Camera, CameraType } from "expo-camera";
+import { Camera, CameraType, FlashMode } from "expo-camera";
 import { useEffect, useRef, useState } from "react";
 import { Button, StyleSheet, Text, View } from "react-native";
 import * as React from 'react';
@@ -34,6 +34,14 @@ const FrontCamera = () => {
     setPhoto(newPhoto);
   }
 
+  const getPictureSizes = async () => {
+    console.log("resolutions:")
+    await cameraRef.current?.getAvailablePictureSizesAsync('4:3')
+    .then(result => {
+      console.log(result);
+    });
+  }
+
   if(photo !== undefined) {
     dispatch(setImage(photo.base64));
 
@@ -52,10 +60,11 @@ const FrontCamera = () => {
 
   return (
     <>
-      <Camera style={styles.container} ref={cameraRef} type={CameraType.front} >
+      <Camera style={styles.container} ref={cameraRef} type={CameraType.front} pictureSize="352x288">
       </Camera>
         <View style={styles.buttonContainer}>
         <Button title="Shoot" onPress={takePicture} />
+        <Button title="Pic size" onPress={getPictureSizes} />
       </View>
    </>
   )
