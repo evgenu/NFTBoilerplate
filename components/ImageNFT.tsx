@@ -1,45 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
-import { Button, Text, View } from "react-native";
+import { Button, Image, Text, View } from "react-native";
 import { parseEther } from "@ethersproject/units";
+import { collection, getDocs, getFirestore, query, where } from "@firebase/firestore";
+import { resolve } from "node:path/win32";
 
 const ImageNFT = ({ tokenId }: any) => {
   const contract = useSelector((state: RootState) => state.contract.value);
   const address = useSelector((state: RootState) => state.address.value);
-  
-  const [isMinted, setIsMinter] = useState(false);
-  const metadataURI = '';
-  
+  const firebase = useSelector((state: RootState) => state.firebase.value);
+  const firestore = getFirestore(firebase);
+
+  const [image, setImage] = useState('');
+
   useEffect(() => {
-    getMintedStatus();
-  }, [isMinted]);
-
-  const getMintedStatus = async () => {
-    const result = await contract.isContentOwned(metadataURI);
-  }
-
-  const mintToken = async () => {
-    const result = await contract.payToMint(address, metadataURI, {
-      value: parseEther('0.05'),
+    const q = query(collection(firestore, 'tokens'), where('tokenId', '==', tokenId));
+    const queryResults = getDocs(q).then(result => {
+      result.forEach(doc => {
+        setImage(doc.image);
+      });
     });
-
-    await result.wait();
-
-    getMintedStatus();
-  }
-
-  const getURI = async () => {
-    const result = contract.tokenURI(tokenId);
-  }
+    
+    
+  }, [])
+    
 
   return (
     <View>
-      {isMinted ? (
-        <Button title="Minted" onPress={getURI} />
-      ) : (
-        <Button title="Not Minted" onPress={mintToken} />
-      )}
+      <Image source={{ uri: 'data:image/jpg;base64,' + image }} >
     </View>
   );
 }

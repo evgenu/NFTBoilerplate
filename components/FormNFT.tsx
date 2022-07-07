@@ -6,7 +6,8 @@ import { RootState } from "../store";
 import TOKEN_CONTRACT from "../constants/abis/tokenAbi.json";
 import { getContract } from "../helpers/ethers";
 import { contractAddress } from "../constants/contracts";
-import { getBlob, getStorage, ref, uploadBytesResumable, uploadString } from 'firebase/storage'
+import { getStorage, ref, uploadBytesResumable } from 'firebase/storage'
+import { addDoc, collection, doc, getFirestore, setDoc, updateDoc } from 'firebase/firestore'
 
 function makeid(length) {
   var result           = '';
@@ -19,6 +20,16 @@ charactersLength));
  return result;
 }
 
+function _base64ToArrayBuffer(base64) {
+  var binary_string = window.atob(base64);
+  var len = binary_string.length;
+  var bytes = new Uint8Array(len);
+  for (var i = 0; i < len; i++) {
+      bytes[i] = binary_string.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 const FormNFT = ({ discardImage }: any) => {
 
   const web3provider = (useSelector((state : RootState) => state.web3provider.value));
@@ -28,16 +39,23 @@ const FormNFT = ({ discardImage }: any) => {
   const firebase = useSelector((state: RootState) => state.firebase.value);
   
   const [count, setCount] = useState(0);
-  const storage = getStorage();
-
+  const [numberOfDocuments, setNumberOfDocuments] = useState(0);
 
   const publishNFT = async () => {
-    let storage = getStorage(firebase);
-    let storageRef = ref(storage, makeid(10).concat('.jpg'));
-    console.log(makeid(10).concat('.jpg'));
-    console.log(image.length);
-    await uploadBytesResumable(storageRef, image, 'base64')
+    const storage = getStorage(firebase);
+    const firestore = getFirestore(firebase);
+    const fileName = makeid(10).concat('.jpg');
+    const storageRef = ref(storage, fileName);
+
+    await firestore.collection('tokens').get().then(result => setNumberOfDocuments(result.size))
+
+    await uploadBytesResumable(storageRef, _base64ToArrayBuffer(image))
       .then(uploadResult => console.log(uploadResult));
+
+    await addDoc(collection(firestore, 'tokens'), {
+      image: 'fileName',
+      tokenId: numberOfDocuments + 1
+    }).catch(e => console.log(e));
   }
 
   return (
